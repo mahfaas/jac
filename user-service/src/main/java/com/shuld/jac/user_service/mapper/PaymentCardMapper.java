@@ -12,5 +12,6 @@ public interface PaymentCardMapper {
     PaymentCardDto toDto(PaymentCard entity);
 
     @Mapping(target = "user", ignore = true)
+    @Mapping(target = "active", ignore = true)
     PaymentCard toEntity(PaymentCardDto dto);
 }
