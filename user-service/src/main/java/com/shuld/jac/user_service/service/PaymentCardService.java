@@ -49,7 +49,7 @@ public class PaymentCardService {
         PaymentCard card = cardMapper.toEntity(dto);
         user.addCard(card);
 
-        userRepository.saveAndFlush(user);
+        userRepository.flush();
         evictUserCache(user.getId());
 
         return cardMapper.toDto(card);
