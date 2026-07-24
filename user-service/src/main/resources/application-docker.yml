@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres-user}:${DB_PORT:5432}/${DB_NAME:user_db}
+    username: ${DB_USER:user_service}
+    password: ${DB_PASSWORD:user_service_pass}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis-user}
+      port: ${REDIS_PORT:6379}
