@@ -13,5 +13,7 @@ public interface PaymentCardMapper {
 
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "active", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     PaymentCard toEntity(PaymentCardDto dto);
 }

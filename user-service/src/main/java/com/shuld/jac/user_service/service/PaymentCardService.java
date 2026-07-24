@@ -37,7 +37,7 @@ public class PaymentCardService {
 
     @Transactional
     public PaymentCardDto createCard(PaymentCardDto dto) {
-        User user = userRepository.findById(dto.getUserId())
+        User user = userRepository.findByIdForUpdate(dto.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: id=" + dto.getUserId()));
 
         long existingCards = cardRepository.countByUserId(user.getId());
