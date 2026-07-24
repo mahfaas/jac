@@ -44,7 +44,7 @@ public class PaymentCardService {
         PaymentCard card = cardMapper.toEntity(dto);
         user.addCard(card);
 
-        userRepository.save(user); // cascade PERSIST сохранит и новую карту
+        userRepository.saveAndFlush(user);
 
         return cardMapper.toDto(card);
     }
