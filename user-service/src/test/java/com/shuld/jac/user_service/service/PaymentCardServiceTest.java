@@ -68,7 +68,7 @@ class PaymentCardServiceTest {
         PaymentCard card = new PaymentCard();
         PaymentCardDto expected = sampleCardDto(1L);
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(cardRepository.countByUserId(1L)).thenReturn(2L);
         when(cardMapper.toEntity(dto)).thenReturn(card);
         when(cacheManager.getCache("users")).thenReturn(usersCache);
@@ -84,7 +84,7 @@ class PaymentCardServiceTest {
 
     @Test
     void createCard_userNotFound_throwsAndDoesNotEvict() {
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> cardService.createCard(sampleCardDto(1L)))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -96,7 +96,7 @@ class PaymentCardServiceTest {
     void createCard_maxCardsExceeded_throwsAndDoesNotSave() {
         User user = new User();
         user.setId(1L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(cardRepository.countByUserId(1L)).thenReturn(5L);
 
         assertThatThrownBy(() -> cardService.createCard(sampleCardDto(1L)))
