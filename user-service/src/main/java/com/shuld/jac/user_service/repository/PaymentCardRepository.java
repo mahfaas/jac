@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
 
@@ -16,6 +17,9 @@ public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>,
     org.springframework.data.domain.Page<PaymentCard> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
 
     long countByUserId(Long userId);
+
+    @Query("select c.user.id from PaymentCard c where c.id = :id")
+    Optional<Long> findUserIdById(@Param("id") Long id);
 
     @Modifying
     @Transactional

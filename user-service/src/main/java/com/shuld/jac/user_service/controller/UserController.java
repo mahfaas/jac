@@ -1,6 +1,7 @@
 package com.shuld.jac.user_service.controller;
 
 import com.shuld.jac.user_service.dto.UserDto;
+import com.shuld.jac.user_service.dto.UserWithCardsDto;
 import com.shuld.jac.user_service.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -52,5 +53,10 @@ public class UserController {
     public ResponseEntity<Void> deactivateUser(@PathVariable Long id) {
         userService.setUserActive(id, false);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/with-cards")
+    public ResponseEntity<UserWithCardsDto> getUserWithCards(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(userService.getUserWithCards(id));
     }
 }
