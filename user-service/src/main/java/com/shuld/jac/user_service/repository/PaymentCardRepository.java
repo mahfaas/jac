@@ -13,6 +13,7 @@ import java.util.List;
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
 
     List<PaymentCard> findByUserId(Long userId);
+    org.springframework.data.domain.Page<PaymentCard> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
 
     long countByUserId(Long userId);
 
