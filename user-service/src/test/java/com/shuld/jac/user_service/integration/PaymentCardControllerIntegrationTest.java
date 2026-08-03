@@ -19,6 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
 
+    private static final String AUTH = "Authorization";
+
     private Long createUserAndGetId(String name, String surname, String email) throws Exception {
         UserDto dto = new UserDto();
         dto.setName(name);
@@ -47,6 +49,7 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
 
     private Long createCardAndGetId(Long userId, String number) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/cards")
+                        .header(AUTH, userToken(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto(userId, number, "Card Holder"))))
                 .andExpect(status().isCreated())
@@ -61,6 +64,7 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         Long userId = createUserAndGetId("Card", "Owner", "card.owner@example.com");
 
         mockMvc.perform(post("/api/cards")
+                        .header(AUTH, userToken(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto(userId, "4111111111111111", "Card Owner"))))
                 .andExpect(status().isCreated())
@@ -71,8 +75,31 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void createCard_forAnotherUser_returnsForbidden() throws Exception {
+        Long userId = createUserAndGetId("Card", "Owner2", "card.owner2@example.com");
+
+        mockMvc.perform(post("/api/cards")
+                        .header(AUTH, userToken(userId + 1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cardDto(userId, "4111111111111111", "Card Owner"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createCard_admin_canCreateForAnyUser() throws Exception {
+        Long userId = createUserAndGetId("Card", "Owner3", "card.owner3@example.com");
+
+        mockMvc.perform(post("/api/cards")
+                        .header(AUTH, adminToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cardDto(userId, "4111111111111111", "Card Owner"))))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void createCard_userNotFound_returnsNotFound() throws Exception {
         mockMvc.perform(post("/api/cards")
+                        .header(AUTH, adminToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto(999999L, "4111111111111111", "Nobody"))))
                 .andExpect(status().isNotFound());
@@ -85,12 +112,14 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         for (int i = 0; i < 5; i++) {
             String number = "411111111111" + String.format("%04d", i);
             mockMvc.perform(post("/api/cards")
+                            .header(AUTH, userToken(userId))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(cardDto(userId, number, "Max Cards"))))
                     .andExpect(status().isCreated());
         }
 
         mockMvc.perform(post("/api/cards")
+                        .header(AUTH, userToken(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto(userId, "4111111111119999", "Max Cards"))))
                 .andExpect(status().isConflict());
@@ -98,7 +127,7 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void getCardById_notFound_returnsNotFound() throws Exception {
-        mockMvc.perform(get("/api/cards/{id}", 999999))
+        mockMvc.perform(get("/api/cards/{id}", 999999).header(AUTH, adminToken()))
                 .andExpect(status().isNotFound());
     }
 
@@ -107,9 +136,18 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         Long userId = createUserAndGetId("Get", "Card", "get.card@example.com");
         Long cardId = createCardAndGetId(userId, "4111111111111111");
 
-        mockMvc.perform(get("/api/cards/{id}", cardId))
+        mockMvc.perform(get("/api/cards/{id}", cardId).header(AUTH, userToken(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(cardId));
+    }
+
+    @Test
+    void getCardById_differentUser_returnsForbidden() throws Exception {
+        Long userId = createUserAndGetId("Get", "Card2", "get.card2@example.com");
+        Long cardId = createCardAndGetId(userId, "4111111111111111");
+
+        mockMvc.perform(get("/api/cards/{id}", cardId).header(AUTH, userToken(userId + 1)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -119,10 +157,30 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         createCardAndGetId(userA, "4111111111111111");
         createCardAndGetId(userB, "4222222222222222");
 
-        mockMvc.perform(get("/api/users/{userId}/cards", userA))
+        mockMvc.perform(get("/api/users/{userId}/cards", userA).header(AUTH, userToken(userA)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(1))
                 .andExpect(jsonPath("$.content[0].userId").value(userA));
+    }
+
+    @Test
+    void getCardsByUserId_differentUser_returnsForbidden() throws Exception {
+        Long userA = createUserAndGetId("User", "C", "user.c@example.com");
+
+        mockMvc.perform(get("/api/users/{userId}/cards", userA).header(AUTH, userToken(userA + 1)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAllCards_asUser_returnsForbidden() throws Exception {
+        mockMvc.perform(get("/api/cards").header(AUTH, userToken(1L)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAllCards_asAdmin_returnsOk() throws Exception {
+        mockMvc.perform(get("/api/cards").header(AUTH, adminToken()))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -134,6 +192,7 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         update.setExpirationDate("01/30");
 
         mockMvc.perform(put("/api/cards/{id}", cardId)
+                        .header(AUTH, userToken(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())
@@ -142,8 +201,21 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void updateCard_differentUser_returnsForbidden() throws Exception {
+        Long userId = createUserAndGetId("Update", "Card2", "update.card2@example.com");
+        Long cardId = createCardAndGetId(userId, "4111111111111111");
+
+        mockMvc.perform(put("/api/cards/{id}", cardId)
+                        .header(AUTH, userToken(userId + 1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(cardDto(userId, "4111111111111111", "Nope"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void updateCard_notFound_returnsNotFound() throws Exception {
         mockMvc.perform(put("/api/cards/{id}", 999999)
+                        .header(AUTH, adminToken())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(cardDto(1L, "4111111111111111", "Nobody"))))
                 .andExpect(status().isNotFound());
@@ -154,12 +226,21 @@ class PaymentCardControllerIntegrationTest extends AbstractIntegrationTest {
         Long userId = createUserAndGetId("Toggle", "Card", "toggle.card@example.com");
         Long cardId = createCardAndGetId(userId, "4111111111111111");
 
-        mockMvc.perform(patch("/api/cards/{id}/deactivate", cardId))
+        mockMvc.perform(patch("/api/cards/{id}/deactivate", cardId).header(AUTH, userToken(userId)))
                 .andExpect(status().isNoContent());
         assertThat(cardRepository.findById(cardId).orElseThrow().getActive()).isFalse();
 
-        mockMvc.perform(patch("/api/cards/{id}/activate", cardId))
+        mockMvc.perform(patch("/api/cards/{id}/activate", cardId).header(AUTH, userToken(userId)))
                 .andExpect(status().isNoContent());
         assertThat(cardRepository.findById(cardId).orElseThrow().getActive()).isTrue();
+    }
+
+    @Test
+    void deactivateCard_differentUser_returnsForbidden() throws Exception {
+        Long userId = createUserAndGetId("Toggle", "Card2", "toggle.card2@example.com");
+        Long cardId = createCardAndGetId(userId, "4111111111111111");
+
+        mockMvc.perform(patch("/api/cards/{id}/deactivate", cardId).header(AUTH, userToken(userId + 1)))
+                .andExpect(status().isForbidden());
     }
 }

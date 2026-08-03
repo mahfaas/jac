@@ -29,22 +29,22 @@ jobs:
           cache: maven
 
       - name: Build
-        run: mvn -B -f user-service/pom.xml compile
+        run: mvn -B compile
 
       - name: Test
-        run: mvn -B -f user-service/pom.xml test
+        run: mvn -B test
 
       - name: SonarQube analysis
         if: ${{ env.SONAR_TOKEN != '' }}
         run: >
-          mvn -B -f user-service/pom.xml
+          mvn -B
           org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-          -Dsonar.projectKey=jac-user-service
+          -Dsonar.projectKey=jac-project
           -Dsonar.host.url=${SONAR_HOST_URL}
           -Dsonar.token=${SONAR_TOKEN}
 
       - name: Package
-        run: mvn -B -f user-service/pom.xml package -DskipTests
+        run: mvn -B package -DskipTests
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -53,7 +53,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push user-service Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -62,3 +62,13 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/user-service:${{ github.sha }}
             ghcr.io/${{ github.repository }}/user-service:latest
+
+      - name: Build and push auth-service Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: auth-service/Dockerfile
+          push: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+          tags: |
+            ghcr.io/${{ github.repository }}/auth-service:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/auth-service:latest
