@@ -1,5 +1,6 @@
 package com.shuld.jac.user_service.service;
 
+import com.shuld.jac.jwtcommon.security.JwtUserPrincipal;
 import com.shuld.jac.user_service.dto.PaymentCardDto;
 import com.shuld.jac.user_service.entity.PaymentCard;
 import com.shuld.jac.user_service.entity.User;
@@ -8,6 +9,7 @@ import com.shuld.jac.user_service.exception.ResourceNotFoundException;
 import com.shuld.jac.user_service.mapper.PaymentCardMapper;
 import com.shuld.jac.user_service.repository.PaymentCardRepository;
 import com.shuld.jac.user_service.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +20,10 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,6 +55,18 @@ class PaymentCardServiceTest {
     @BeforeEach
     void setUp() {
         cardService = new PaymentCardService(cardRepository, userRepository, cardMapper, cacheManager);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void authenticateAs(Long userId, String role) {
+        var principal = new JwtUserPrincipal(userId, role);
+        var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, authorities));
     }
 
     private PaymentCardDto sampleCardDto(Long userId) {
@@ -108,14 +126,47 @@ class PaymentCardServiceTest {
 
     @Test
     void getCardById_found_returnsMappedDto() {
+        User owner = new User();
+        owner.setId(1L);
         PaymentCard card = new PaymentCard();
+        card.setUser(owner);
         PaymentCardDto dto = sampleCardDto(1L);
         when(cardRepository.findById(5L)).thenReturn(Optional.of(card));
         when(cardMapper.toDto(card)).thenReturn(dto);
+        authenticateAs(1L, "USER");
 
         PaymentCardDto result = cardService.getCardById(5L);
 
         assertThat(result).isEqualTo(dto);
+    }
+
+    @Test
+    void getCardById_admin_bypassesOwnershipCheck() {
+        User owner = new User();
+        owner.setId(1L);
+        PaymentCard card = new PaymentCard();
+        card.setUser(owner);
+        PaymentCardDto dto = sampleCardDto(1L);
+        when(cardRepository.findById(5L)).thenReturn(Optional.of(card));
+        when(cardMapper.toDto(card)).thenReturn(dto);
+        authenticateAs(999L, "ADMIN");
+
+        PaymentCardDto result = cardService.getCardById(5L);
+
+        assertThat(result).isEqualTo(dto);
+    }
+
+    @Test
+    void getCardById_notOwnerAndNotAdmin_throwsAccessDenied() {
+        User owner = new User();
+        owner.setId(1L);
+        PaymentCard card = new PaymentCard();
+        card.setUser(owner);
+        when(cardRepository.findById(5L)).thenReturn(Optional.of(card));
+        authenticateAs(2L, "USER");
+
+        assertThatThrownBy(() -> cardService.getCardById(5L))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
@@ -170,6 +221,7 @@ class PaymentCardServiceTest {
         when(cardRepository.save(card)).thenReturn(card);
         when(cacheManager.getCache("users")).thenReturn(usersCache);
         when(cardMapper.toDto(card)).thenReturn(expected);
+        authenticateAs(7L, "USER");
 
         PaymentCardDto result = cardService.updateCard(9L, update);
 
@@ -178,6 +230,22 @@ class PaymentCardServiceTest {
         assertThat(card.getExpirationDate()).isEqualTo("01/30");
         assertThat(result).isEqualTo(expected);
         verify(usersCache).evict(7L);
+    }
+
+    @Test
+    void updateCard_notOwnerAndNotAdmin_throwsAccessDeniedAndDoesNotSave() {
+        User owner = new User();
+        owner.setId(7L);
+        PaymentCard card = new PaymentCard();
+        card.setUser(owner);
+
+        when(cardRepository.findById(9L)).thenReturn(Optional.of(card));
+        authenticateAs(8L, "USER");
+
+        assertThatThrownBy(() -> cardService.updateCard(9L, sampleCardDto(7L)))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(cardRepository, never()).save(any());
     }
 
     @Test
@@ -194,11 +262,23 @@ class PaymentCardServiceTest {
     void setCardActive_found_updatesFlagAndEvictsOwnerCache() {
         when(cardRepository.findUserIdById(9L)).thenReturn(Optional.of(7L));
         when(cacheManager.getCache("users")).thenReturn(usersCache);
+        authenticateAs(7L, "USER");
 
         cardService.setCardActive(9L, false);
 
         verify(cardRepository).setActive(9L, false);
         verify(usersCache).evict(7L);
+    }
+
+    @Test
+    void setCardActive_notOwnerAndNotAdmin_throwsAccessDeniedAndDoesNotUpdate() {
+        when(cardRepository.findUserIdById(9L)).thenReturn(Optional.of(7L));
+        authenticateAs(8L, "USER");
+
+        assertThatThrownBy(() -> cardService.setCardActive(9L, true))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(cardRepository, never()).setActive(any(), anyBoolean());
     }
 
     @Test

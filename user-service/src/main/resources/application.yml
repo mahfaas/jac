@@ -19,3 +19,6 @@ spring:
   data:
     cache:
       type: redis
+
+jwt:
+  secret: ${JWT_SECRET}

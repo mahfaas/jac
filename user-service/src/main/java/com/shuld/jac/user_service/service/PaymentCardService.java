@@ -1,5 +1,6 @@
 package com.shuld.jac.user_service.service;
 
+import com.shuld.jac.jwtcommon.security.SecurityUtils;
 import com.shuld.jac.user_service.dto.PaymentCardDto;
 import com.shuld.jac.user_service.entity.PaymentCard;
 import com.shuld.jac.user_service.entity.User;
@@ -58,6 +59,7 @@ public class PaymentCardService {
     public PaymentCardDto getCardById(Long id) {
         PaymentCard card = cardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found: id=" + id));
+        SecurityUtils.requireOwnerOrAdmin(card.getUser().getId());
         return cardMapper.toDto(card);
     }
 
@@ -73,6 +75,7 @@ public class PaymentCardService {
     public PaymentCardDto updateCard(Long id, PaymentCardDto dto) {
         PaymentCard card = cardRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found: id=" + id));
+        SecurityUtils.requireOwnerOrAdmin(card.getUser().getId());
 
         card.setNumber(dto.getNumber());
         card.setHolder(dto.getHolder());
@@ -87,6 +90,7 @@ public class PaymentCardService {
     public void setCardActive(Long id, boolean active) {
         Long userId = cardRepository.findUserIdById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Card not found: id=" + id));
+        SecurityUtils.requireOwnerOrAdmin(userId);
         cardRepository.setActive(id, active);
         evictUserCache(userId);
     }
