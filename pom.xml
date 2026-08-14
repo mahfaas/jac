@@ -23,6 +23,7 @@
         <module>jwt-common</module>
         <module>user-service</module>
         <module>auth-service</module>
+        <module>order-service</module>
     </modules>
 
     <build>
