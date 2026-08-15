@@ -66,4 +66,14 @@ public class UserController {
     public ResponseEntity<UserWithCardsDto> getUserWithCards(@PathVariable("id") Long id) {
         return ResponseEntity.ok(userService.getUserWithCards(id));
     }
+
+    @GetMapping("/internal/{id}")
+    public ResponseEntity<UserDto> getUserByIdInternal(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @GetMapping("/internal/by-email")
+    public ResponseEntity<UserDto> getUserByEmailInternal(@RequestParam String email) {
+        return ResponseEntity.ok(userService.getUserByEmail(email));
+    }
 }

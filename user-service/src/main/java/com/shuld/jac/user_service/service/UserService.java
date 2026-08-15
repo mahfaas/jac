@@ -46,6 +46,12 @@ public class UserService {
         return userMapper.toDto(user);
     }
 
+    public UserDto getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: email=" + email));
+        return userMapper.toDto(user);
+    }
+
     public Page<UserDto> getAllUsers(String name, String surname, Pageable pageable) {
         return userRepository.findAll(UserSpecifications.filterBy(name, surname), pageable)
                 .map(userMapper::toDto);

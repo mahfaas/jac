@@ -5,6 +5,7 @@ COPY pom.xml pom.xml
 COPY jwt-common/pom.xml jwt-common/pom.xml
 COPY user-service/pom.xml user-service/pom.xml
 COPY auth-service/pom.xml auth-service/pom.xml
+COPY order-service/pom.xml order-service/pom.xml
 RUN mvn -B -pl user-service -am dependency:go-offline
 
 COPY jwt-common/src jwt-common/src

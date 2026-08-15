@@ -8,7 +8,6 @@
         <outputRelativeToContentRoot value="true" />
         <module name="jwt-common" />
         <module name="auth-service" />
-        <module name="order-service" />
       </profile>
       <profile name="Annotation profile for jac-project" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -16,9 +15,9 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
         </processorPath>
         <module name="user-service" />
+        <module name="order-service" />
       </profile>
     </annotationProcessing>
   </component>
