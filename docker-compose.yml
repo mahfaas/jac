@@ -44,6 +44,23 @@ services:
       timeout: 5s
       retries: 10
 
+  postgres-order:
+    image: postgres:16
+    container_name: postgres-order
+    environment:
+      POSTGRES_DB: ${ORDER_DB_NAME}
+      POSTGRES_USER: ${ORDER_DB_USER}
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ORDER_DB_USER} -d ${ORDER_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   user-service:
     build:
       context: .
@@ -83,3 +100,4 @@ services:
 volumes:
   pg_user_data:
   pg_auth_data:
+  pg_order_data:
