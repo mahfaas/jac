@@ -69,12 +69,14 @@ public class OrderService {
         return orderMapper.toResponseDto(saved, user);
     }
 
+    @Transactional(readOnly = true)
     public OrderResponseDto getOrderById(Long id) {
         Order order = findOrderOrThrow(id);
         UserInfoDto user = userServiceClient.getUserById(order.getUserId());
         return orderMapper.toResponseDto(order, user);
     }
 
+    @Transactional(readOnly = true)
     public Page<OrderResponseDto> getOrders(LocalDateTime from, LocalDateTime to,
                                              List<OrderStatus> statuses, Pageable pageable) {
         Page<Order> orders = orderRepository.findAll(OrderSpecifications.filterBy(from, to, statuses), pageable);
@@ -85,6 +87,7 @@ public class OrderService {
         });
     }
 
+    @Transactional(readOnly = true)
     public Page<OrderResponseDto> getOrdersByUserId(Long userId, Pageable pageable) {
         UserInfoDto user = userServiceClient.getUserById(userId);
         return orderRepository.findByUserId(userId, pageable)
