@@ -48,10 +48,8 @@ databaseChangeLog:
             constraintName: fk_order_items_item
             referencedTableName: items
             referencedColumnNames: id
-        - addCheckConstraint:
-            constraintName: chk_order_items_quantity_positive
-            tableName: order_items
-            constraintBody: "quantity > 0"
+        - sql:
+            sql: "ALTER TABLE order_items ADD CONSTRAINT chk_order_items_quantity_positive CHECK (quantity > 0)"
         - createIndex:
             indexName: idx_order_items_order_id
             tableName: order_items
