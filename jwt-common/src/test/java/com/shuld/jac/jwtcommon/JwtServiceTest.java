@@ -61,7 +61,10 @@ class JwtServiceTest {
     @Test
     void parseAccessToken_rejectsTamperedToken() {
         String token = jwtService.generateAccessToken(1L, "USER");
-        String tampered = token.substring(0, token.length() - 2) + "xx";
+        int mid = token.length() / 2;
+        char original = token.charAt(mid);
+        char replacement = original == 'a' ? 'b' : 'a';
+        String tampered = token.substring(0, mid) + replacement + token.substring(mid + 1);
 
         assertThatThrownBy(() -> jwtService.parseAccessToken(tampered))
                 .isInstanceOf(InvalidJwtException.class);
