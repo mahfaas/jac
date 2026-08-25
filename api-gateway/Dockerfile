@@ -7,16 +7,15 @@ COPY user-service/pom.xml user-service/pom.xml
 COPY auth-service/pom.xml auth-service/pom.xml
 COPY order-service/pom.xml order-service/pom.xml
 COPY api-gateway/pom.xml api-gateway/pom.xml
-RUN mvn -B -pl user-service -am dependency:go-offline
+RUN mvn -B -pl api-gateway -am dependency:go-offline
 
-COPY jwt-common/src jwt-common/src
-COPY user-service/src user-service/src
-RUN mvn -B -pl user-service -am package -DskipTests
+COPY api-gateway/src api-gateway/src
+RUN mvn -B -pl api-gateway -am package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-COPY --from=build /workspace/user-service/target/user-service-*.jar app.jar
+COPY --from=build /workspace/api-gateway/target/api-gateway-*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -79,6 +79,15 @@ public class UserService {
         }
     }
 
+    @Transactional
+    @CacheEvict(value = "users", key = "#id")
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found: id=" + id);
+        }
+        userRepository.deleteById(id);
+    }
+
     @Cacheable(value = "users", key = "#id")
     public UserWithCardsDto getUserWithCards(Long id) {
         User user = userRepository.findById(id)

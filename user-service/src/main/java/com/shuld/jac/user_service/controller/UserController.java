@@ -76,4 +76,10 @@ public class UserController {
     public ResponseEntity<UserDto> getUserByEmailInternal(@RequestParam String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
+
+    @DeleteMapping("/internal/{id}")
+    public ResponseEntity<Void> deleteUserInternal(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
+    }
 }

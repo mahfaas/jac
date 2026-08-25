@@ -114,6 +114,23 @@ services:
     ports:
       - "8082:8080"
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: api-gateway
+    depends_on:
+      - user-service
+      - auth-service
+      - order-service
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USER_SERVICE_URL: http://user-service:8080
+      ORDER_SERVICE_URL: http://order-service:8080
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "8083:8083"
+
 volumes:
   pg_user_data:
   pg_auth_data:
